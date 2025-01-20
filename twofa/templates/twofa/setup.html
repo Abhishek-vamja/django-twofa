@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Setup 2FA</title>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>Two-Factor Authentication</h1>
+
+    <script>
+        $(document).ready(function () {
+            // Step 1: Show a loader message
+            Swal.fire({
+                title: "Generating QR Code...",
+                html: '<div class="loader"></div>',
+                timer: 5000, // 5 seconds
+                timerProgressBar: true,
+                backdrop: true,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                },
+            }).then(() => {
+                // Step 2: Show the QR Code and link
+                Swal.fire({
+                    title: "Scan the QR Code",
+                    html: `
+                        <p>Use your authentication app to scan the QR code below:</p>
+                        <img src="{{ qr_code_url }}" alt="QR Code" style="width: 200px; height: 200px; margin: 10px 0;">
+                        <br>
+                        <a href="{{ otp_url }}" style="text-decoration: none; color: #007BFF; font-size: 14px;">Click here to continue with desktop</a>
+                    `,
+                    showConfirmButton: false,
+                    backdrop: true,
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                });
+            });
+        });
+    </script>
+</body>
+</html>
