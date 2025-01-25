@@ -161,7 +161,7 @@ class Verify2FAView(FormView):
             "form" : OTPVerificationForm,
             "login_redirect": AUTH["LOGIN_REDIRECT"]
         }
-        return render(self.request, "twofa/verify.html", context)
+        return render(self.request, "twofa/v2/send_otp.html", context)
 
     def form_valid(self, form):
         """
