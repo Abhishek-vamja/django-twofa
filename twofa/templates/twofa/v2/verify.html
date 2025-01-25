@@ -1,0 +1,49 @@
+{% if exception %}
+<!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> 
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        Swal.fire({
+            title: 'Session Expired or Invalid',
+            text: 'Your session has expired, or invalid you are trying to use is no longer valid. Please log in again to continue.',
+            icon: 'warning',
+            confirmButtonText: 'OK',
+            confirmButtonColor: '#d33',
+            backdrop: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = '/login';
+            }
+        });
+    });
+</script>
+{% else %}
+    {% load static %}
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>2-Factor Authentication</title>
+        <link rel="stylesheet" href="{% static 'twofa/verify.css' %}">
+    </head>
+    <body>
+        <div class="background-circle circle-top"></div>
+        <div class="background-circle circle-bottom"></div>
+        <div class="auth-container">
+            <h2>2-Factor Authentication</h2>
+            <p>We’ll send an email authentication code to your email <b>{{ email }}</b>.</p>
+            <form action="" method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    {{ form.as_p }}
+                </div>
+                <button type="submit">Verify</button>
+            </form>
+            <a href="#">Didn't receive a code? Resend code</a>
+        </div>
+    </body>
+    </html>
+{% endif %}
