@@ -102,11 +102,10 @@ class Setup2FAView(TemplateView):
         return context
 
 
-class   Verify2FAView(FormView):
+class Verify2FAView(FormView):
     """
     Handles OTP verification.
-    """
-    # template_name = "twofa/verify.html"
+    """    
     template_name = "twofa/v2/send_otp.html"
     form_class = OTPVerificationForm
     
