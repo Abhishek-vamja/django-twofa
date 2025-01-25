@@ -33,12 +33,13 @@ class LoginView(FormView):
     """
     Handles user login.
     """
-    template_name = "twofa/login.html"
+    template_name = "twofa/v2/login.html"
     form_class = (
         import_string(AUTH.get("FORMS", {}).get("LOGIN_FORM"))
         if AUTH.get("FORMS", {}).get("LOGIN_FORM")
         else AuthenticationForm
     )
+
     def form_valid(self, form):
         """
         Handle valid form submissions.
@@ -58,7 +59,7 @@ class LoginView(FormView):
                 return redirect("twofa:setup_2fa")  # Redirect to the 2FA setup page
             else:
                 login(self.request, user)  # Log in the user
-                return redirect(AUTH["LOGIN_REDIRECT_URL"] or "/")  # Redirect to post-login page
+                return redirect(AUTH["LOGIN_REDIRECT"] or "/")  # Redirect to post-login page
         else:
             # Return an error response for invalid credentials
             return HttpResponse("Invalid credentials. Please try again.", status=401)
@@ -83,22 +84,33 @@ class Setup2FAView(TemplateView):
     """
     Handles the setup of Two-Factor Authentication.
     """
-    template_name = "twofa/setup.html"
+    template_name = "twofa/v2/send_otp.html"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        
+        try:
 
-        # Generate a unique identifier with characters and numbers
-        unique_id = str(uuid.uuid4())
+            # Generate a unique identifier with characters and numbers
+            unique_id = str(uuid.uuid4())
 
-        full_url = self.request.build_absolute_uri()
-        parsed_url = urlparse(full_url)
-        id = self.request.session.get('id')
-        otp_url = f"{parsed_url.scheme}://{parsed_url.netloc}/verify/{id}/{unique_id}"
+            full_url = self.request.build_absolute_uri()
+            parsed_url = urlparse(full_url)
+            id = self.request.session.get('id')
+            email = self.request.session.get('email')
+            otp_url = f"{parsed_url.scheme}://{parsed_url.netloc}/verify/{id}/{unique_id}"
 
-        context["qr_code_url"] = f"https://api.qrserver.com/v1/create-qr-code/?data={otp_url}&size=200x200"
-        context["otp_url"] = otp_url
-        del self.request.session['id']
+            context["qr_code_url"] = f"https://api.qrserver.com/v1/create-qr-code/?data={otp_url}&size=200x200"
+            context["otp_url"] = otp_url
+            context["email"] = email
+
+            del self.request.session['id']
+
+        except KeyError:
+            context = {
+                "exception" : True
+            }
+
         return context
 
 
@@ -106,7 +118,7 @@ class Verify2FAView(FormView):
     """
     Handles OTP verification.
     """    
-    template_name = "twofa/v2/send_otp.html"
+    template_name = "twofa/v2/verify.html"
     form_class = OTPVerificationForm
     
     def send_email_view(request, otp, email):
@@ -136,8 +148,10 @@ class Verify2FAView(FormView):
 
         self.request.session['otp'] = otp
         self.send_email_view(otp, email)
+
         del self.request.session['email']
-        print("==> OTP :", otp)
+
+        print("-- OTP --", otp)
         return otp
 
     def verify_otp(self, otp):
@@ -156,19 +170,23 @@ class Verify2FAView(FormView):
         """
         Generate OTP on GET request.
         """
-        self.generate_otp()  # Generate and store OTP in the session
-        context = {
-            "form" : OTPVerificationForm,
-            "login_redirect": AUTH["LOGIN_REDIRECT"]
-        }
-        return render(self.request, "twofa/v2/send_otp.html", context)
+        try:
+            self.generate_otp()  # Generate and store OTP in the session
+            context = {
+                "form" : OTPVerificationForm,
+                "login_redirect": AUTH["LOGIN_REDIRECT"]
+            }
+        except KeyError:
+            context = {
+                "exception" : True
+            }
+        return render(self.request, self.template_name, context)
 
     def form_valid(self, form):
         """
         Handle form submission for OTP verification.
         """
         otp = form.cleaned_data["otp"]
-        print("=== otp ==", otp)
         id = self.kwargs.get("id")
         uuid = self.kwargs.get("uuid")
 

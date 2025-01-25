@@ -1,20 +1,90 @@
-{% load static %}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2-Factor Authentication</title>
-    <link rel="stylesheet" href="{% static 'twofa/send_otp.css' %}">
-</head>
-<body>
-    <div class="background-circle circle-top"></div>
-    <div class="background-circle circle-bottom"></div>
-    <div class="auth-container">
-        <h2>2-Factor Authentication</h2>
-        <p>We’ll send an SMS authentication code to your phone number ending in 7305.</p>
-        <button>Send Code</button>
-        <a href="#">Need help?</a>
-    </div>
-</body>
-</html>
+{% if exception %}
+
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> 
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            Swal.fire({
+                title: 'Session Expired or Invalid',
+                text: 'Your session has expired, or invalid you are trying to use is no longer valid. Please log in again to continue.',
+                icon: 'warning',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#d33',
+                backdrop: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = '/login';
+                }
+            });
+        });
+    </script>
+
+{% else %}
+
+    {% load static %}
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>2-Factor Authentication</title>
+        <link rel="stylesheet" href="{% static 'twofa/send_otp.css' %}">
+        <style>
+            .loader {
+            width: 50px;
+            aspect-ratio: 1;
+            --_c:no-repeat radial-gradient(farthest-side,#25b09b 92%,#0000);
+            background: 
+                var(--_c) top,
+                var(--_c) left,
+                var(--_c) right,
+                var(--_c) bottom;
+            background-size: 12px 12px;
+            animation: l7 1s infinite;
+            }
+            @keyframes l7 {to{transform: rotate(.5turn)}}
+        </style>
+    </head>
+    <body>
+        <!-- Loader -->
+        <div class="loader" id="loader">
+            <div class="spinner"></div>
+        </div>
+
+            <div class="background-circle circle-top"></div>
+            <div class="background-circle circle-bottom"></div>
+            <div class="auth-container" id="auth-container">
+                <h2>2-Factor Authentication</h2>
+                <p>We’ll send an email authentication code to your email <b>{{ email }}</b>.</p>
+                <a href="{{ otp_url }}" id="sendCodeLink"><button>Send Code</button></a>
+                <a href="#">Need help?</a>
+            </div>
+        </section>
+
+        <script>
+            const loader = document.getElementById('loader');
+            const auth_container = document.getElementById('auth-container');
+
+            function showLoader() {
+                loader.style.display = 'flex';
+                auth_container.style.display = 'none';
+            }
+
+            function hideLoader() {
+                loader.style.display = 'none';
+            }
+
+            document.getElementById('sendCodeLink').addEventListener('click', function(event) {
+                showLoader();
+            });
+
+            window.onload = function() {
+                hideLoader();
+            };
+        </script>
+    </body>
+    </html>
+
+{% endif %}
