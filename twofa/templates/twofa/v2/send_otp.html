@@ -1,0 +1,20 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2-Factor Authentication</title>
+    <link rel="stylesheet" href="{% static 'twofa/send_otp.css' %}">
+</head>
+<body>
+    <div class="background-circle circle-top"></div>
+    <div class="background-circle circle-bottom"></div>
+    <div class="auth-container">
+        <h2>2-Factor Authentication</h2>
+        <p>We’ll send an SMS authentication code to your phone number ending in 7305.</p>
+        <button>Send Code</button>
+        <a href="#">Need help?</a>
+    </div>
+</body>
+</html>
