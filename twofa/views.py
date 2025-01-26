@@ -14,9 +14,7 @@ from django.conf import settings
 import uuid
 from django.utils.module_loading import import_string
 from .forms import ForgotForm, OTPVerificationForm, ResetPassword, ResetUserName
-from .tasks import TimedKeyFernet
-
-timed_fernet = TimedKeyFernet()
+from .tasks import encrypt_message, decrypt_message
 
 User = get_user_model()
 AUTH = settings.TWO_FACTOR_AUTH
@@ -272,7 +270,7 @@ class ForgotUsername(FormView):
         if user:
             full_url = self.request.build_absolute_uri()
             parsed_url = urlparse(full_url)
-            encrypt_value = timed_fernet.encrypt_message(email)
+            encrypt_value = encrypt_message(email)
             value = str(encrypt_value).replace("b'", "").replace("'", "")
             url = f"{parsed_url.scheme}://{parsed_url.netloc}/reset-username/{value}"
             
@@ -322,7 +320,7 @@ class ResetUsername(FormView):
         value = self.kwargs.get("value")
         bytes_data = value.encode("utf-8")
         try:
-            decrypt_value = timed_fernet.decrypt_message(encrypted_message=bytes_data)
+            decrypt_value = decrypt_message(encrypted_message=bytes_data)
             context = {
                 "form" : self.form_class,
                 "email" : decrypt_value
@@ -346,10 +344,13 @@ class ResetUsername(FormView):
         Returns:
             HttpResponseRedirect: Redirects to the success URL if the username reset is successful.
         """
-        email = self.request.POST.get("email")
+        value = self.kwargs.get("value")
+        bytes_data = value.encode("utf-8")
+        decrypt_value = decrypt_message(encrypted_message=bytes_data)
+
         username = self.request.POST.get("username")
         
-        user = User.objects.get(email=email)
+        user = User.objects.get(email=decrypt_value)
         user.username = username
         user.save()
         return super().form_valid(form)
@@ -457,7 +458,7 @@ class ResetPasswordView(FormView):
         
         try:
             # Decrypt the value safely
-            decrypted_email = timed_fernet.decrypt_message(encrypted_message=value.encode("utf-8"))
+            decrypted_email = decrypt_message(encrypted_message=value.encode("utf-8"))
             
             context = {
                 "form": self.form_class(),
@@ -484,12 +485,15 @@ class ResetPasswordView(FormView):
         Returns:
             HttpResponse: Redirects to the success URL if the password reset is successful.
         """
-        email = self.request.POST.get("email")
+        value = self.kwargs.get("value")
+        bytes_data = value.encode("utf-8")
+        decrypt_value = decrypt_message(encrypted_message=bytes_data)
+
         password = self.request.POST.get("confirm_password")
         
         # Ensure user exists and reset the password
         try:
-            user = User.objects.get(email=email)
+            user = User.objects.get(email=decrypt_value)
             user.set_password(password)
             user.save()
         except User.DoesNotExist:
