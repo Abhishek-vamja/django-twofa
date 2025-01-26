@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2-Factor Authentication</title>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+            background-color: #f8f9fa;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .background-circle {
+            position: absolute;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #fcb045, #fd1d1d);
+            opacity: 0.6;
+            animation: move 6s infinite alternate ease-in-out;
+        }
+
+        .circle-top {
+            width: 20vw;
+            height: 20vw;
+            top: -5vw;
+            left: -8vw;
+        }
+
+        .circle-bottom {
+            width: 18vw;
+            height: 18vw;
+            bottom: -6vw;
+            right: -6vw;
+        }
+
+        .auth-container {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 400px;
+            padding: 30px;
+            text-align: center;
+            animation: fadeIn 0.6s ease-in-out;
+            z-index: 2;
+        }
+
+        .auth-container h2 {
+            margin: 0 0 20px;
+            font-size: 2rem;
+            color: #333;
+        }
+
+        .auth-container p {
+            font-size: 1rem;
+            color: #555;
+            margin-bottom: 25px;
+        }
+
+        .auth-container input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .auth-container button {
+            background-color: #ff9800;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 0.875rem 1.25rem;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .auth-container button:hover {
+            background-color: #e68900;
+        }
+
+        .auth-container a {
+            display: block;
+            margin-top: 20px;
+            font-size: 0.875rem;
+            color: #ff9800;
+            text-decoration: none;
+        }
+
+        .auth-container a:hover {
+            text-decoration: underline;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes move {
+            from {
+                transform: translateY(0);
+            }
+            to {
+                transform: translateY(-20px);
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .circle-top {
+                width: 25vw;
+                height: 25vw;
+            }
+            .circle-bottom {
+                width: 22vw;
+                height: 22vw;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .circle-top {
+                width: 30vw;
+                height: 30vw;
+            }
+            .circle-bottom {
+                width: 28vw;
+                height: 28vw;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .auth-container {
+                padding: 20px;
+            }
+            .auth-container h2 {
+                font-size: 1.5rem;
+            }
+            .auth-container p {
+                font-size: 0.875rem;
+            }
+            .auth-container button {
+                font-size: 0.875rem;
+                padding: 0.75rem 1rem;
+            }
+            .circle-top {
+                width: 35vw;
+                height: 35vw;
+            }
+            .circle-bottom {
+                width: 30vw;
+                height: 30vw;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .auth-container h2 {
+                font-size: 1.25rem;
+            }
+            .auth-container p {
+                font-size: 0.75rem;
+            }
+        }
+
+        .loader {
+            width: 50px;
+            aspect-ratio: 1;
+            --_c:no-repeat radial-gradient(farthest-side,#25b09b 92%,#0000);
+            background: 
+                var(--_c) top,
+                var(--_c) left,
+                var(--_c) right,
+                var(--_c) bottom;
+            background-size: 12px 12px;
+            animation: l7 1s infinite;
+        }
+        @keyframes l7 {to{transform: rotate(.5turn)}}
+    </style>
+</head>
+<body>
+    <!-- Loader -->
+    <div class="loader" id="loader">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="background-circle circle-top"></div>
+    <div class="background-circle circle-bottom"></div>
+    <div class="auth-container" id="auth-container">
+        <h2>Forgot {{ field_name }} </h2>
+        <p>Please enter your email address. We'll verify it and send a link to reset your {{ field_name|lower }}.</p>
+        <form action="" method="post" onsubmit="showLoader()">
+            {% csrf_token %}
+            {{ form.email }}
+            <button type="submit" id="sendCodeLink">Send Link</button>
+        </form>
+    </div>
+
+    <script>
+        const loader = document.getElementById('loader');
+        const auth_container = document.getElementById('auth-container');
+
+        function showLoader() {
+            loader.style.display = 'flex';
+            auth_container.style.display = 'none';
+        }
+
+        function hideLoader() {
+            loader.style.display = 'none';
+        }
+
+        document.getElementById('sendCodeLink').addEventListener('click', function(event) {
+            showLoader();
+        });
+
+        window.onload = function () {
+            loader.style.display = 'none';
+        };
+    </script>
+</body>
+</html>
