@@ -1,25 +1,27 @@
 {% if exception %}
-<!-- SweetAlert2 -->
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> 
-<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script> 
 
-<script>
-    $(document).ready(function () {
-        Swal.fire({
-            title: 'Session Expired or Invalid',
-            text: 'Your session has expired, or invalid you are trying to use is no longer valid. Please log in again to continue.',
-            icon: 'warning',
-            confirmButtonText: 'OK',
-            confirmButtonColor: '#d33',
-            backdrop: true
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = '/login';
-            }
+    <script>
+        $(document).ready(function () {
+            Swal.fire({
+                title: 'Session Expired or Invalid',
+                text: 'Your session has expired, or invalid you are trying to use is no longer valid. Please log in again to continue.',
+                icon: 'warning',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#d33',
+                backdrop: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = '/login';
+                }
+            });
         });
-    });
-</script>
+    </script>
+
 {% else %}
+
     {% load static %}
     <!DOCTYPE html>
     <html lang="en">
@@ -46,4 +48,5 @@
         </div>
     </body>
     </html>
+
 {% endif %}

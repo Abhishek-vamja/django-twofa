@@ -3,7 +3,7 @@ from .views import (
     RegisterView, LoginView, LogoutView, 
     Setup2FAView, Verify2FAView, ForgotUsername,
     SuccessLinkView, ResetUsername, ForgotPassword,
-    ResetPasswordView
+    ResetPasswordView, AuthView
 )
 
 app_name = "twofa"
@@ -13,7 +13,7 @@ urlpatterns = [
     path('login/', LoginView.as_view(), name='login'),
     path('logout/', LogoutView.as_view(), name='logout'),
     path('setup/', Setup2FAView.as_view(), name='setup_2fa'),
-    path('verify/<int:id>/<str:uuid>', Verify2FAView.as_view(), name='verify_2fa'),
+    path('verify/', Verify2FAView.as_view(), name='verify_2fa'),
     
     path("success-link/", SuccessLinkView.as_view(), name="success-link"),
 
@@ -22,4 +22,6 @@ urlpatterns = [
     
     path("forgot-password/", ForgotPassword.as_view(), name="forgot-password"),
     path("reset-password/<str:value>", ResetPasswordView.as_view(), name="reset-password"),
+    
+    path("finger-auth/", AuthView.as_view(), name="finger-auth")
 ]

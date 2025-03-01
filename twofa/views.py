@@ -1,17 +1,17 @@
 import random
 from urllib.parse import urlparse
-import base64
 from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate, login, logout
 from django.shortcuts import redirect, render
-from django.views.generic import FormView, TemplateView, CreateView
+from django.urls import reverse
+from django.contrib import messages
+from django.views.generic import FormView, TemplateView
 from django.http import HttpResponse
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.http import HttpResponse
 from django.conf import settings
-import uuid
 from django.utils.module_loading import import_string
 from .forms import ForgotForm, OTPVerificationForm, ResetPassword, ResetUserName
 from .tasks import encrypt_message, decrypt_message
@@ -23,13 +23,17 @@ class RegisterView(FormView):
     """
     Handles user registration.
     """
-    template_name = "twofa/register.html"
+    template_name = "twofa/v2/register.html"
     form_class = UserCreationForm
 
     def form_valid(self, form):
         user = form.save()  # Save the new user
         return HttpResponse("Registration successful! You can now log in.")
 
+
+class AuthView(TemplateView):
+    """Fingerprint authentication"""
+    template_name = "twofa/v2/auth.html"
 
 class LoginView(FormView):
     """
@@ -50,20 +54,26 @@ class LoginView(FormView):
         username = form.cleaned_data.get('username', None)
         password = form.cleaned_data.get('password')
 
-        # Try authenticating using username or email
+        # Authenticating using username or email
         user = authenticate(self.request, username=username, password=password) or \
                authenticate(self.request, username=email, password=password)
 
         if user:
-            if AUTH["ENABLE"]:  # Check if 2FA is enabled
+            if AUTH["ENABLE"]:
                 self.request.session['email'] = user.email
                 self.request.session['id'] = user.id
-                return redirect("twofa:setup_2fa")  # Redirect to the 2FA setup page
+                data = {
+                    "user_id" : user.id,
+                    "email" : user.email,
+                }
+                encrypt_value = encrypt_message(data)
+                auth_data = str(encrypt_value).replace("b'", "").replace("'", "")
+                url = reverse("twofa:setup_2fa")
+                return redirect(f"{url}?auth={auth_data}")
             else:
-                login(self.request, user)  # Log in the user
-                return redirect(AUTH["LOGIN_REDIRECT"] or "/")  # Redirect to post-login page
+                login(self.request, user)
+                return redirect(AUTH["LOGIN_REDIRECT"] or "/")
         else:
-            # Return an error response for invalid credentials
             return HttpResponse("Invalid credentials. Please try again.", status=401)
 
     def form_invalid(self, form):
@@ -92,21 +102,18 @@ class Setup2FAView(TemplateView):
         context = super().get_context_data(**kwargs)
         
         try:
-
-            # Generate a unique identifier with characters and numbers
-            unique_id = str(uuid.uuid4())
-
             full_url = self.request.build_absolute_uri()
             parsed_url = urlparse(full_url)
-            id = self.request.session.get('id')
-            email = self.request.session.get('email')
-            otp_url = f"{parsed_url.scheme}://{parsed_url.netloc}/verify/{id}/{unique_id}"
+            
+            bytes_data = self.request.GET.get("auth")
+            decrypt_value = decrypt_message(encrypted_message=bytes_data)
 
-            context["qr_code_url"] = f"https://api.qrserver.com/v1/create-qr-code/?data={otp_url}&size=200x200"
+            email = decrypt_value.get("email", None)
+
+            otp_url = f"{parsed_url.scheme}://{parsed_url.netloc}/verify/?auth={bytes_data}"
+
             context["otp_url"] = otp_url
-            context["email"] = email
-
-            del self.request.session['id']
+            context["email"] = email            
 
         except KeyError:
             context = {
@@ -187,22 +194,25 @@ class Verify2FAView(FormView):
         """
         Handle form submission for OTP verification.
         """
-        otp = form.cleaned_data["otp"]
-        id = self.kwargs.get("id")
-        uuid = self.kwargs.get("uuid")
+        bytes_data = self.request.GET.get("auth")
+        decrypt_value = decrypt_message(encrypted_message=bytes_data)
 
-        # Verify the OTP
+        otp = form.cleaned_data["otp"]
+        id = decrypt_value.get("user_id", None)
+
         is_valid, message = self.verify_otp(otp)
         if is_valid:
             try:
                 user = User.objects.get(id=id)
                 del self.request.session['otp']
-                login(self.request, user)  # Log in the user
+                login(self.request, user)
                 return redirect(AUTH["LOGIN_REDIRECT"])
             except ObjectDoesNotExist:
-                return HttpResponse("User not found. Please check your details.")
+                messages.error(self.request, "Your operation was successful!")
+                return redirect(self.request.META.get("HTTP_REFERER", "default-url"))
         else:
-            return HttpResponse(message)
+            messages.error(self.request, message)
+            return redirect(self.request.META.get("HTTP_REFERER", "default-url"))
 
     def form_invalid(self, form):
         """
